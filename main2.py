@@ -2,109 +2,168 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, roc_curve
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="AI Account Investigation Console", layout="wide")
+# ===============================
+# PAGE CONFIGURATION
+# ===============================
+st.set_page_config(page_title="AI Twitter Bot Intelligence System", layout="wide")
 
-st.title("🛰️ AI Social Media Investigation Console")
-st.markdown("### Intelligent Behavioral Analysis & Bot Risk Detection System")
+st.title("🛡 AI-Powered Twitter Bot Intelligence System")
+st.markdown("### Major Project - Behavioral Analysis Based Social Media Bot Detection")
 
-# Upload dataset
-uploaded_file = st.file_uploader("Upload Dataset (CSV)", type=["csv"])
+# ===============================
+# FILE UPLOAD
+# ===============================
+uploaded_file = st.file_uploader("📂 Upload Twitter Dataset (CSV)", type=["csv"])
 
 if uploaded_file:
 
-    df = pd.read_csv(uploaded_file)
-    st.success("Dataset Loaded Successfully")
-    st.dataframe(df.head())
+    dataset = pd.read_csv(uploaded_file)
+    st.success("✅ Dataset Loaded Successfully")
+    st.dataframe(dataset.head())
 
-    # Auto detect numeric columns
-    numeric_columns = df.select_dtypes(include=np.number).columns.tolist()
+    # ===============================
+    # FEATURE SELECTION
+    # ===============================
+    X = dataset[['followers_count', 'friends_count', 'listedcount',
+                 'favourites_count', 'statuses_count', 'verified']]
+    y = dataset['bot']
 
-    st.markdown("### 🔧 Automatic Feature Detection")
-    st.write("Detected Numeric Behavioral Features:")
-    st.write(numeric_columns)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
 
-    # Choose target column
-    target_column = st.selectbox("Select Target Column (Real/Fake or 0/1)", df.columns)
+    # ===============================
+    # MODEL COMPARISON SECTION
+    # ===============================
+    if st.button("📊 Run Model Performance Analysis"):
 
-    # Choose username column
-    username_column = st.selectbox("Select Username Column", df.columns)
+        models = {
+            "Logistic Regression": LogisticRegression(max_iter=1000),
+            "Random Forest": RandomForestClassifier(),
+            "Decision Tree": DecisionTreeClassifier(),
+            "Support Vector Machine": SVC(probability=True)
+        }
 
-    if st.button("🚀 Initialize AI Investigation System"):
+        for name, model in models.items():
 
-        X = df[numeric_columns].fillna(0)
-        y = pd.to_numeric(df[target_column], errors='coerce').fillna(0)
+            model.fit(X_train, y_train)
+            pred = model.predict(X_test)
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
+            accuracy = accuracy_score(y_test, pred)
+            precision = precision_score(y_test, pred)
+            recall = recall_score(y_test, pred)
+            f1 = f1_score(y_test, pred)
+            auc = roc_auc_score(y_test, pred)
 
-        model = LogisticRegression(max_iter=1000)
-        model.fit(X_train, y_train)
+            st.markdown("---")
+            st.subheader(f"🔎 {name} Results")
 
-        accuracy = accuracy_score(y_test, model.predict(X_test))
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Accuracy", f"{accuracy*100:.2f}%")
+            col2.metric("Precision", f"{precision*100:.2f}%")
+            col3.metric("Recall", f"{recall*100:.2f}%")
 
-        st.success("AI Investigation Engine Ready")
-        st.metric("Model Accuracy", f"{accuracy*100:.2f}%")
+            st.write(f"F1 Score: {f1:.2f}")
+            st.write(f"AUC Score: {auc:.2f}")
 
-        # Store in session
-        st.session_state["model"] = model
-        st.session_state["df"] = df
-        st.session_state["features"] = numeric_columns
-        st.session_state["username_col"] = username_column
-
-# Investigation Section
-if "model" in st.session_state:
-
-    st.markdown("---")
-    st.header("🔍 Run Account Investigation")
-
-    username_input = st.text_input("Enter Username to Investigate")
-
-    if st.button("Start Investigation"):
-
-        df = st.session_state["df"]
-        model = st.session_state["model"]
-        features = st.session_state["features"]
-        username_col = st.session_state["username_col"]
-
-        df[username_col] = df[username_col].astype(str)
-
-        if username_input in df[username_col].values:
-
-            user = df[df[username_col] == username_input].iloc[0]
-
-            input_data = np.array([user[features]])
-            prediction = model.predict(input_data)
-            probability = model.predict_proba(input_data)
-
-            bot_risk = probability[0][1] * 100
-            real_score = probability[0][0] * 100
-
-            st.markdown("## 🧾 Profile Snapshot")
-            st.write(user)
-
-            st.markdown("## ⚖ AI Verdict Scale")
+            # ROC Curve
+            fpr, tpr, _ = roc_curve(y_test, pred)
             fig, ax = plt.subplots()
-            ax.barh(["Real Score", "Bot Risk"], [real_score, bot_risk])
-            ax.set_xlim(0, 100)
+            ax.plot(fpr, tpr, label="AUC = %0.2f" % auc)
+            ax.plot([0, 1], [0, 1], "r--")
+            ax.set_xlabel("False Positive Rate")
+            ax.set_ylabel("True Positive Rate")
+            ax.set_title(f"ROC Curve - {name}")
+            ax.legend(loc="lower right")
             st.pyplot(fig)
 
-            st.markdown("## 🧠 AI Behavioral Explanation")
+    # ===============================
+    # FINAL MODEL FOR PREDICTION
+    # ===============================
+    final_model = LogisticRegression(max_iter=1000)
+    final_model.fit(X_train, y_train)
 
-            high_features = user[features].sort_values(ascending=False).head(3)
-            st.write("Top Influential Behavioral Indicators:")
-            st.write(high_features)
+    # ===============================
+    # UNIQUE USERNAME BASED DETECTION
+    # ===============================
+    st.markdown("---")
+    st.header("🔍 Social Media Intelligence Deep Scanner")
 
-            st.markdown("## 🎯 Final AI Verdict")
+    username_input = st.text_input("Enter Twitter Username (exact match from dataset)")
+
+    if st.button("🚀 Run Deep Scan"):
+
+        dataset['screen_name_lower'] = dataset['screen_name'].str.lower()
+
+        if username_input.lower() in dataset['screen_name_lower'].values:
+
+            user_data = dataset[
+                dataset['screen_name_lower'] == username_input.lower()
+            ].iloc[0]
+
+            input_features = np.array([[ 
+                user_data['followers_count'],
+                user_data['friends_count'],
+                user_data['listedcount'],
+                user_data['favourites_count'],
+                user_data['statuses_count'],
+                user_data['verified']
+            ]])
+
+            prediction = final_model.predict(input_features)
+            probability = final_model.predict_proba(input_features)
+
+            bot_prob = probability[0][1] * 100
+            real_prob = probability[0][0] * 100
+
+            st.markdown("---")
+            st.subheader("🧠 AI Intelligence Report")
+
+            col1, col2 = st.columns(2)
+            col1.metric("Authenticity Score", f"{real_prob:.2f}%")
+            col2.metric("Threat Probability", f"{bot_prob:.2f}%")
+
+            st.progress(int(bot_prob))
+
+            # Threat Classification
+            if bot_prob > 75:
+                st.error("🚨 THREAT LEVEL: HIGH")
+                summary = "Severe automated bot-like behavioral patterns detected."
+            elif bot_prob > 40:
+                st.warning("⚠ THREAT LEVEL: MEDIUM")
+                summary = "Moderate suspicious activity observed."
+            else:
+                st.success("✅ THREAT LEVEL: LOW")
+                summary = "Behavior consistent with genuine human interaction."
+
+            st.markdown("### 🤖 AI Summary")
+            st.write(summary)
+
+            st.markdown("### 📊 Behavioral Intelligence Card")
+
+            ratio = user_data['followers_count'] / (user_data['friends_count'] + 1)
+
+            st.write(f"Followers: {user_data['followers_count']}")
+            st.write(f"Friends: {user_data['friends_count']}")
+            st.write(f"Follower-Friend Ratio: {ratio:.2f}")
+            st.write(f"Statuses Posted: {user_data['statuses_count']}")
+            st.write(f"Listed Count: {user_data['listedcount']}")
+            st.write(f"Verified: {user_data['verified']}")
+
+            st.markdown("---")
+            st.subheader("🎯 Final Classification")
 
             if prediction[0] == 1:
-                st.error("🚨 BOT / FAKE ACCOUNT DETECTED")
+                st.error("CLASSIFIED AS: BOT ACCOUNT")
             else:
-                st.success("✅ AUTHENTIC HUMAN ACCOUNT")
+                st.success("CLASSIFIED AS: AUTHENTIC HUMAN ACCOUNT")
 
         else:
-            st.warning("Username not found in dataset.")
+            st.warning("⚠ Username not found in dataset.")
