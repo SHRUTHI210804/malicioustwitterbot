@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 # ===============================
 st.set_page_config(page_title="AI Twitter Bot Intelligence System", layout="wide")
 
-st.title("🛡 AI-Powered Twitter Bot Intelligence System")
+st.title("🛡 Detecting Malicious Twitter Bots")
 st.markdown("### Major Project - Behavioral Analysis Based Social Media Bot Detection")
 
 # ===============================
