@@ -10,14 +10,13 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 import matplotlib.pyplot as plt
 
-# ===============================
 # PAGE CONFIG
-# ===============================
+
 st.set_page_config(page_title="Detecting Malicious Twitter Bots", layout="wide")
 
-# ===============================
+
 # UI STYLE
-# ===============================
+
 st.markdown("""
 <style>
 
@@ -78,9 +77,8 @@ color:white!important;
 </style>
 """, unsafe_allow_html=True)
 
-# ===============================
 # BACKGROUND IMAGE
-# ===============================
+
 def set_background(image):
     try:
         with open(image,"rb") as f:
@@ -100,9 +98,9 @@ def set_background(image):
 
 set_background("IMAGE.jpg")
 
-# ===============================
+
 # TITLE
-# ===============================
+
 st.markdown("""
 <div class="main-heading">
 🛡 Detecting Malicious Twitter Bots
@@ -112,9 +110,9 @@ Behavioral Analysis Based Social Media Bot Detection
 </div>
 """,unsafe_allow_html=True)
 
-# ===============================
+
 # FILE UPLOAD
-# ===============================
+
 uploaded_file=st.file_uploader("📂 Upload Twitter Dataset",type=["csv"])
 
 if uploaded_file:
@@ -145,16 +143,15 @@ if uploaded_file:
             X,y,test_size=0.2,random_state=42
         )
 
-        # ===============================
+        
         # MODEL ANALYSIS
-        # ===============================
+        
         if st.button("📊 Run Model Performance Analysis"):
 
             models={
                 "Logistic Regression":LogisticRegression(max_iter=1000),
                 "Random Forest":RandomForestClassifier(),
-                "Decision Tree":DecisionTreeClassifier(),
-                "SVM":SVC(probability=True)
+                
             }
 
             for name,model in models.items():
@@ -185,15 +182,15 @@ if uploaded_file:
                 ax.set_title(name+" ROC")
                 st.pyplot(fig)
 
-        # ===============================
+      
         # FINAL MODEL
-        # ===============================
+        
         final_model=LogisticRegression(max_iter=1000)
         final_model.fit(X_train,y_train)
 
-        # ===============================
+        
         # USER SCAN
-        # ===============================
+       
         st.markdown("---")
         st.header("🔍 Social Media Intelligence Deep Scanner")
 
